@@ -1,0 +1,105 @@
+boot.o: boot.S multiboot.h x86_desc.h types.h
+Interrupt_wrapper.o: Interrupt_wrapper.S Interrupt_wrapper.h
+x86_desc.o: x86_desc.S x86_desc.h types.h
+fop.o: fop.c fop.h types.h terminal.h devices/keyboard.h \
+  devices/../types.h devices/i8259.h devices/cursor.h devices/../lib.h \
+  devices/../types.h devices/RTC.h devices/fs.h
+idt.o: idt.c idt.h x86_desc.h types.h sys_call/sys_call.h \
+  sys_call/do_sys_call.h sys_call/../fop.h sys_call/../types.h \
+  sys_call/../devices/fs.h sys_call/../devices/../types.h \
+  sys_call/../devices/../lib.h sys_call/../devices/../types.h \
+  sys_call/../types.h sys_call/../process.h sys_call/../devices/fs.h \
+  sys_call/../page.h sys_call/../x86_desc.h sys_call/../lib.h \
+  sys_call/../sys_call/do_sys_call.h sys_call/../terminal.h \
+  sys_call/../devices/keyboard.h sys_call/../devices/i8259.h \
+  sys_call/../devices/cursor.h sys_call/../signal.h lib.h \
+  devices/keyboard.h Interrupt_wrapper.h
+kernel.o: kernel.c multiboot.h types.h x86_desc.h lib.h devices/i8259.h \
+  devices/../types.h debug.h tests.h page.h devices/fs.h devices/../lib.h \
+  fop.h idt.h sys_call/sys_call.h sys_call/do_sys_call.h \
+  sys_call/../fop.h sys_call/../devices/fs.h sys_call/../types.h \
+  sys_call/../process.h sys_call/../types.h sys_call/../devices/fs.h \
+  sys_call/../page.h sys_call/../x86_desc.h \
+  sys_call/../sys_call/do_sys_call.h sys_call/../terminal.h \
+  sys_call/../devices/keyboard.h sys_call/../devices/../types.h \
+  sys_call/../devices/i8259.h sys_call/../devices/cursor.h \
+  sys_call/../devices/../lib.h sys_call/../signal.h devices/keyboard.h \
+  devices/RTC.h devices/i8259.h devices/mouse.h devices/pit.h \
+  devices/cursor.h terminal.h
+lib.o: lib.c lib.h types.h devices/cursor.h devices/../types.h \
+  devices/../lib.h process.h devices/fs.h page.h x86_desc.h \
+  sys_call/do_sys_call.h sys_call/../fop.h sys_call/../types.h \
+  sys_call/../devices/fs.h sys_call/../types.h terminal.h \
+  devices/keyboard.h devices/i8259.h signal.h
+page.o: page.c page.h x86_desc.h types.h lib.h
+process.o: process.c process.h types.h devices/fs.h devices/../types.h \
+  devices/../lib.h devices/../types.h page.h x86_desc.h lib.h \
+  sys_call/do_sys_call.h sys_call/../fop.h sys_call/../types.h \
+  sys_call/../devices/fs.h sys_call/../types.h terminal.h \
+  devices/keyboard.h devices/i8259.h devices/cursor.h signal.h
+signal.o: signal.c signal.h types.h process.h devices/fs.h \
+  devices/../types.h devices/../lib.h devices/../types.h page.h \
+  x86_desc.h lib.h sys_call/do_sys_call.h sys_call/../fop.h \
+  sys_call/../types.h sys_call/../devices/fs.h sys_call/../types.h \
+  terminal.h devices/keyboard.h devices/i8259.h devices/cursor.h
+terminal.o: terminal.c terminal.h types.h devices/keyboard.h \
+  devices/../types.h devices/i8259.h devices/cursor.h devices/../lib.h \
+  devices/../types.h lib.h page.h x86_desc.h process.h devices/fs.h \
+  sys_call/do_sys_call.h sys_call/../fop.h sys_call/../types.h \
+  sys_call/../devices/fs.h sys_call/../types.h signal.h
+tests.o: tests.c tests.h x86_desc.h types.h lib.h devices/RTC.h \
+  devices/../types.h devices/../lib.h devices/i8259.h devices/keyboard.h \
+  terminal.h devices/cursor.h devices/fs.h process.h page.h \
+  sys_call/do_sys_call.h sys_call/../fop.h sys_call/../types.h \
+  sys_call/../devices/fs.h sys_call/../types.h signal.h devices/pit.h
+sys_call.o: sys_call/sys_call.S
+cursor.o: devices/cursor.c devices/cursor.h devices/../types.h \
+  devices/../lib.h devices/../types.h
+fs.o: devices/fs.c devices/fs.h devices/../types.h devices/../lib.h \
+  devices/../types.h devices/../sys_call/do_sys_call.h \
+  devices/../sys_call/../fop.h devices/../sys_call/../types.h \
+  devices/../sys_call/../devices/fs.h devices/../sys_call/../types.h
+i8259.o: devices/i8259.c devices/i8259.h devices/../types.h \
+  devices/../lib.h devices/../types.h
+keyboard.o: devices/keyboard.c devices/keyboard.h devices/../types.h \
+  devices/i8259.h devices/../lib.h devices/../types.h \
+  devices/../scancode_dict.h devices/../process.h devices/../devices/fs.h \
+  devices/../devices/../types.h devices/../devices/../lib.h \
+  devices/../page.h devices/../x86_desc.h devices/../lib.h \
+  devices/../sys_call/do_sys_call.h devices/../sys_call/../fop.h \
+  devices/../sys_call/../types.h devices/../sys_call/../devices/fs.h \
+  devices/../sys_call/../types.h devices/../terminal.h \
+  devices/../devices/keyboard.h devices/../devices/cursor.h \
+  devices/../signal.h devices/../terminal.h
+mouse.o: devices/mouse.c devices/mouse.h devices/../types.h \
+  devices/../lib.h devices/../types.h devices/i8259.h devices/keyboard.h
+pit.o: devices/pit.c devices/../types.h devices/../lib.h \
+  devices/../types.h devices/i8259.h devices/pit.h devices/../process.h \
+  devices/../devices/fs.h devices/../devices/../types.h \
+  devices/../devices/../lib.h devices/../page.h devices/../x86_desc.h \
+  devices/../lib.h devices/../sys_call/do_sys_call.h \
+  devices/../sys_call/../fop.h devices/../sys_call/../types.h \
+  devices/../sys_call/../devices/fs.h devices/../sys_call/../types.h \
+  devices/../terminal.h devices/../devices/keyboard.h \
+  devices/../devices/i8259.h devices/../devices/cursor.h \
+  devices/../signal.h devices/../terminal.h
+RTC.o: devices/RTC.c devices/RTC.h devices/../types.h devices/../lib.h \
+  devices/../types.h devices/i8259.h devices/../process.h \
+  devices/../devices/fs.h devices/../devices/../types.h \
+  devices/../devices/../lib.h devices/../page.h devices/../x86_desc.h \
+  devices/../lib.h devices/../sys_call/do_sys_call.h \
+  devices/../sys_call/../fop.h devices/../sys_call/../types.h \
+  devices/../sys_call/../devices/fs.h devices/../sys_call/../types.h \
+  devices/../terminal.h devices/../devices/keyboard.h \
+  devices/../devices/i8259.h devices/../devices/cursor.h \
+  devices/../signal.h
+do_sys_call.o: sys_call/do_sys_call.c sys_call/do_sys_call.h \
+  sys_call/../fop.h sys_call/../types.h sys_call/../devices/fs.h \
+  sys_call/../devices/../types.h sys_call/../devices/../lib.h \
+  sys_call/../devices/../types.h sys_call/../types.h \
+  sys_call/../process.h sys_call/../devices/fs.h sys_call/../page.h \
+  sys_call/../x86_desc.h sys_call/../lib.h \
+  sys_call/../sys_call/do_sys_call.h sys_call/../terminal.h \
+  sys_call/../devices/keyboard.h sys_call/../devices/i8259.h \
+  sys_call/../devices/cursor.h sys_call/../signal.h \
+  sys_call/../terminal.h sys_call/../page.h sys_call/../signal.h

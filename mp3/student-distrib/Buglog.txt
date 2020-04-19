@@ -1,0 +1,359 @@
+buglog for MP3
+    --  Created by Chengting on 10/19/2019
+
+
+===================================================MP3.1_START==========================================================
+    1. Problem Description:
+        Testing for page initialization
+            Related Documents: --  page.c 
+                In initialization of page we are filling in the entries of the page table,
+                I fill in the pointer part of the entries, I used to set the ptr value to 
+                the (index << 12). This is wrong for the system will automatically << 12
+                when trying to find the address. And here we only need to get the value
+                of the (address>>12) in the entry. This bug will cause the system  crash
+                for it made the page point to a weird place
+                --  Xiyue
+                --  TIME: 10/19/2019
+
+        Problem Solution:
+                change "(index << 12)" into index. 
+
+        Difficulty: about half line
+        Time COST:  about 1 hour to find and 2 second to fix
+        Solved BY:  Xiyue
+        Solved TIME: 10/19/2019
+
+    2. Problem Description:
+        Testing for page initialization
+            Related Documents: --  page.c 
+                wrongly place the "}" so that the first loop inculde the second loop, so blow up
+                --  Xiyue
+                --  TIME: 10/19/2019
+
+        Problem Solution:
+                change the place "}"
+
+        Difficulty: about 1 line
+        Time COST:  about 1 hour to find and 2 second to fix
+        Solved BY:  Xiyue
+        Solved TIME: 10/19/2019
+
+    3. Problem Description:
+        Testing for IDT initialization
+            Test Documents: --  idt.c 
+                            --  idt.h
+                In initialization of IDT, all exception handlers were successfully loaded on IDT 
+            (that is, passing the test eaxmple), however, once testing exception particularly 
+            (e.g. testing by excuting 0/0), the program breaken down and quits unexpectedly.
+                --  Chengting
+                --  TIME: 10/19/2019
+
+        Problem Solution:
+                The problem war caused by missing initialization of "present", that is, the "present" parameter of 
+            each exception handlers were setted as 0, but not 1 as expected. By reseting the parameters, the problem
+            solved successfully.
+
+        Difficulty: about 10 lines using loop for initializing parameters
+        Time COST:  about 30 minutes
+        Solved BY:  Chengting
+        Solved TIME: 10/19/2019
+
+    4. Problem Description:
+        Test for RTC interrupt handler.
+        The RTC interrupt can never be handled, but it can be initialzed correctly. 
+            Test Documents: --  i8269.c 
+                            --  RTC.c
+                --  Lin Hangzheng
+                --  TIME: 10/19/2019
+
+        Problem Solution:
+                We forgot to enable the second pin in the master PIC, which connect to its slave PIC. Therefote, although
+            the interrupt was detected by the slave PIC, it can not be noticed by the master PIC. To solve the problem, we 
+            enable the slave pin (2) inside of the initialization function of i8259.
+
+        Difficulty: about 1 lines to add
+        Time COST:  about 1.5 hrs
+        Solved BY:  Lin Hangzheng
+        Solved TIME: 10/19/2019
+
+    5. Problem Description:
+        Test for RTC interrupt handler
+            Test Documents: --  RTC.c 
+                When calling the RTC interrupt handler, the test_interrupts() seems like only called once.
+                --  Lin Hangzheng
+                --  TIME: 10/20/2019
+
+        Problem Solution:
+                Didn't use the register C of the RTC, to solve the problem, we just need to select the register C and 
+            throw the context.
+
+        Difficulty: about 2 lines to add
+        Time COST:  about 1 hrs
+        Solved BY:  Lin Hangzheng
+        Solved TIME: 10/20/2019
+    
+    6. Problem Description:
+        Test for Keyboard interrupt handler
+            Test Documents: --Keyboard.c
+                when press the Keyboard, the screen will not print correct characters.
+                -- Du Yangkai
+                -- TIME: 10/19/2019
+        
+        Problem Solution:
+                Didn't noticed that the input get from the Keyboard port is actually the scancode instead of the ascil
+            characters, so add a transition dictionary scancode_dict.h to transist the scancode to the ascil characters.
+                
+        Difficulty: refers to the internet https://www.win.tue.nl/~aeb/linux/kbd/scancodes-1.html and add a dictionary
+        Time COST:  about 0.5 hrs
+        Solve BY:   Du Yangkai
+        Solved TIME: 10/19/2019
+    
+    7.  Problem Description:
+        Test for Keyboard interrupt handler
+            Test Documents: -- keyboard.c
+            when press two keyboard at the same time, the system will crash and reboot.
+            -- Du Yangkai
+            --Time: 10/19/2019
+
+        Problem Solution:
+                Add a interrupt wrapper to store all the registers and flags before call the interrupt handler, since the 
+            interrupt handler is running on different stack.
+        Difficulty: Add two file after asking a TA for help
+        Time COST:  1 day
+        Solve By:   Du Yangkai
+        Solved TIME: 10/20/2019
+
+====================================================MP3.1_END==========================================================
+
+====================================================MP3.2_START========================================================
+    1.  Problem Description:
+        Test for fs driver
+            Test Documents: -- fs.c
+            when trying to access the file discripter, I used i*4096, that is wrong
+            for when data struct is defined, the [] will automatically times the size 
+            of the struct to i when finding the address.
+            -- Yu, Chengting
+            --Time: 10/23/2019
+
+        Problem Solution:
+                Cancle the " *4096 " at the i
+        Difficulty: 1 line to fix
+        Time COST:  40min
+        Solve By:   Yu Chengting
+        Solved TIME: 10/23/2019
+
+
+    2.  Problem Description:
+        Test for putc interrupt handler
+            Test Documents: -- lib.c
+            We decided to change the putc fun in lib to support chenge line and scroll up 
+            But when we judge whther we need to call scroll up in the fun, we added in the
+            else statement. That cause our terminal will not be able to scroll the screen 
+            when enter is pressed  
+            -- Yu Chengting
+            --Time: 10/23/2019
+
+        Problem Solution:
+            Put the judge outside of the else statement 
+        Difficulty: 1 line
+        Time COST:  20 minutes
+        Solve By:   Yu Chengting
+        Solved TIME: 10/23/2019
+
+    3.  Problem Description:
+        Test for print syscall
+            Test Documents: -- tests.c
+            We forget to print the last file name in the test of printing all the file content
+            for some logical reasons
+            --Zhu Xiyue
+            --Time: 10/28/2019
+
+        Problem Solution:
+            put another print out of the while loop
+        Difficulty: 10 lines
+        Time COST:  20 minutes
+        Solve By:   Zhu Xiyue 
+        Solved TIME: 10/28/2019
+
+    4.  Problem Description:
+        Test for print syscall
+            Test Documents: -- tests.c
+            Change the buf[length of buf] and over flows and change the memory unexpectedly.
+            --Zhu Xiyue
+            --Time: 10/28/2019
+
+        Problem Solution:
+            Change the buf[length of buf] into buf[length of buf-1].
+        Difficulty: 1 lines
+        Time COST:  20 minutes
+        Solve By:   Zhu Xiyue 
+        Solved TIME: 10/28/2019
+
+    5.  Problem Description:
+        Test for print content
+            Test Documents: -- tests.c
+            When typing the content of the rtc file, it is not empty.
+            --Du Yangkai
+            --Time: 10/28/2019
+
+        Problem Solution:
+            Forgot to clear the buffer which contains the files content. To solve it, we just need to 
+            initialize the buffer
+        Difficulty: 1 lines
+        Time COST:  10 minutes
+        Solve By:   Du Yangkai 
+        Solved TIME: 10/28/2019
+    
+
+====================================================MP3.2_END==========================================================
+
+====================================================MP3.3_START==========================================================
+
+
+
+    1.  Problem Description:
+            Test Documents: -- syys_fd.c
+            When excuting "ls" in shell, we cannot print out all the files.
+            -- Lin, Hangzheng
+            --Time: 11/9/2019
+
+        Problem Solution:
+            Forgot to update the position in the fd array. Just add the file type check and update the position
+        of normal files and directories files.
+        Difficulty: 10 line to fix
+        Time COST:  20min
+        Solve By:   Lin, Hangzheng
+        Solved TIME: 11/9/2019
+
+    2.  Problem Description:
+            Test Documents: -- idt.c
+            when trying to access idt 0x80 , we get a general protection fault
+            for DPL at idt 0x80, is not set to 3
+            -- Yu, Chengting
+            --Time: 11/10/2019
+
+        Problem Solution:
+            set DPL of idt 0x80 to 3 for user to access it
+        Difficulty: 1 line to fix
+        Time COST:  40min
+        Solve By:   Yu Chengting
+        Solved TIME: 11/10/2019
+
+    3.  Problem Description:
+            Test Documents: -- task.c
+            when  create the kernel stack for user by setting esp. we set esp to 8MB - 8KB
+            which is the start of the next page, caused page fault.
+            of the struct to i when finding the address.
+            -- Yu, Chengting
+            --Time: 11/10/2019
+
+        Problem Solution:
+                get esp -4
+        Difficulty: 1 line to fix
+        Time COST:  40min
+        Solve By:   Yu Chengting
+        Solved TIME: 11/10/2019
+
+    4.  Problem Description:
+            Test Documents: -- task.c
+            We used a helper function to change the esp and ebp regs. When that helper fun returns,
+            It directly returns to the parent process instead of going on executing the current 
+            "excute" system call for esp and ebp has been changed
+            -- Yu, Chengting
+            --Time: 11/11/2019
+
+        Problem Solution:
+            Put what's in the helper function into the sys call itself
+        Difficulty: 20 line to fix
+        Time COST:  40min
+        Solve By:   Yu Chengting
+        Solved TIME: 11/11/2019
+
+
+====================================================MP3.3_END==========================================================
+
+====================================================MP3.4_START========================================================
+
+    1.  Problem Description:
+            Test Documents: -- .c
+            in cp2, we used a global variable cur_dentry to implement open and close, we forget to 
+            change it in cp3. The result is that we will always read the last opened file
+            -- Yu, Chengting
+            --Time: 11/11/2019
+
+        Problem Solution:
+            use the file array to access inode
+        Difficulty: 1 line to fix
+        Time COST:  20min
+        Solve By:   Yu Chengting
+        Solved TIME: 11/11/2019
+
+    2.  Problem Description:
+            Test Documents: -- sys_fd.c
+            In read, we used a cur_dentry as global variable to access type of the file 
+            This is not acceptable for we will see the type of the file as the last opened file 
+
+            -- Yu, Chengting
+            --Time: 11/18/2019
+
+        Problem Solution:
+            record a array of type as global variable. Update it when open and use it when read
+        Difficulty: 1 line to fix
+        Time COST:  40min
+        Solve By:   Yu Chengting
+        Solved TIME: 11/18/2019
+
+====================================================MP3.4_END==========================================================
+
+====================================================MP3.5_START========================================================
+    1.  Problem Description:
+            Test Documents: -- keyboard.c
+            we used a keyboard buffer to store the information and when we halt the current process 
+            we get the buffer clear for all the process
+
+            -- Yu, Chengting
+            --Time: 11/11/2019
+
+        Problem Solution:
+            only clear the current buffer
+        Difficulty: 1 line to fix
+        Time COST:  20min
+        Solve By:   Yu Chengting
+        Solved TIME: 11/11/2019
+
+        
+    2.  Problem Description:
+            Test Documents: --terminal.c
+            The backstage program change the position of the cursor of current showing terminal. This is not acceptable.
+
+            --Du Yangkai
+            --Time: 12/03/2019
+
+        Problem Solution:
+            record the cursor position in terminal structure, and switch the screen x and screen y when process is changed, 
+            in this way the cursor will not be changed by the backstage program
+        Difficulty: Change the screenx and screen_y as point and add a new field to terminal
+        Time COST:  30 min
+        Solve By:   Du Yangkai
+        Solved Time:12/03/2019
+
+    3.  Problem Description:
+            Test Documents: --RTC.c
+            When running pingpong and RTC together, the frequency of the two program will be slower. since we do not virualize RTC
+
+            --Du Yangkai
+            --Time: 12/05/2019
+        
+        Problem Solution:
+            Set the RTC base frequency to 1024 hz and calculate the time interval for different frequency user has set, 
+            until the count reach the time interval, the rtc read will return to user space.
+
+        Difficulty: 20 lines to change, virualize RTC
+        Time COST: 30 min
+        Solve By:   Du Yangkai
+        Solved Time: 12/05/2019
+
+
+
+
+
