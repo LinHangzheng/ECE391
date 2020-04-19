@@ -1,0 +1,355 @@
+diff -r -C 4 linux-2.6.22.5/drivers/char/Makefile mp1-linux/drivers/char/Makefile
+*** linux-2.6.22.5/drivers/char/Makefile	2011-08-20 18:17:10.000000000 -0500
+--- mp1-linux/drivers/char/Makefile	2019-08-31 11:29:08.000000000 -0500
+***************
+*** 6,14 ****
+  # This file contains the font map for the default (hardware) font
+  #
+  FONTMAPFILE = cp437.uni
+  
+! obj-y	 += mem.o random.o tty_io.o n_tty.o tty_ioctl.o
+  
+  obj-$(CONFIG_LEGACY_PTYS)	+= pty.o
+  obj-$(CONFIG_UNIX98_PTYS)	+= pty.o
+  obj-y				+= misc.o
+--- 6,14 ----
+  # This file contains the font map for the default (hardware) font
+  #
+  FONTMAPFILE = cp437.uni
+  
+! obj-y	 += mem.o random.o tty_io.o n_tty.o tty_ioctl.o mp1.o
+  
+  obj-$(CONFIG_LEGACY_PTYS)	+= pty.o
+  obj-$(CONFIG_UNIX98_PTYS)	+= pty.o
+  obj-y				+= misc.o
+diff -r -C 4 linux-2.6.22.5/drivers/char/rtc.c mp1-linux/drivers/char/rtc.c
+*** linux-2.6.22.5/drivers/char/rtc.c	2011-08-20 18:17:14.000000000 -0500
+--- mp1-linux/drivers/char/rtc.c	2019-08-31 15:45:16.000000000 -0500
+***************
+*** 100,107 ****
+--- 100,117 ----
+  #ifdef	CONFIG_HPET_RTC_IRQ
+  #undef	RTC_IRQ
+  #endif
+  
++ /* Declare the student functions external (they are in mp1.S) */
++ /* SSL 2019/08/31 -- I removed asmlinkage from the tasklet.  The function
++    signature has to match the tasklet implementation, which is not
++    the asmlinkage model.  We don't use the argument, so it's not so 
++    important.  If we do need it for some reason, we should write a
++    wrapper to avoid introducing another calling convention. */
++ extern void mp1_rtc_tasklet(unsigned long);
++ extern asmlinkage int mp1_ioctl(unsigned long arg, unsigned int cmd);
++ static struct task_struct* life_or_death_id = 0;
++  
+  #ifdef RTC_IRQ
+  static int rtc_has_irq = 1;
+  #endif
+  
+***************
+*** 224,232 ****
+--- 234,406 ----
+  	spin_unlock_irqrestore(&rtc_lock, flags);
+  	return uip;
+  }
+  
++ /* Global variable pointing to the upper-left character in
++  * the text-mode video buffer.  Used by mp1.S to write chars to the screen */
++ char *vmem_base_addr;
++ 
++ /* Since the actual copy_to_user and copy_from_user are C macros,
++  * we can't call them by that name directly from assembly. */
++ asmlinkage unsigned long 
++ mp1_copy_from_user(void *to, const void *from, unsigned long n)
++ {
++ 	unsigned long ret;
++ 	local_irq_enable();
++ 	ret = copy_from_user(to, from, n);
++ 	local_irq_disable();
++ 	return ret;
++ }
++ 
++ asmlinkage unsigned long 
++ mp1_copy_to_user(void *to, const void *from, unsigned long n)
++ {
++ 	unsigned long ret;
++ 	local_irq_enable();
++   	ret = copy_to_user(to, from, n);
++ 	local_irq_disable();
++ 	return ret;
++ }
++ 
++ /* Kernel wrappers for memory allocation */
++ asmlinkage void* mp1_malloc(unsigned long size)
++ {
++ 	void *ret;
++ 	local_irq_enable();
++     	ret = kmalloc(size, GFP_KERNEL);
++ 	local_irq_disable();
++ 	return ret;
++ }
++ 
++ asmlinkage void mp1_free(void *ptr)
++ {
++ 	local_irq_enable();
++ 	kfree(ptr);
++ 	local_irq_disable();
++ }
++ 
++ asmlinkage void mp1_notify_user(void)
++ {
++ 	send_sig_info(SIGUSR1, NULL, life_or_death_id);
++ }
++ 
++ /* Given code to relieve students of a bit of the work */
++ 
++ /* Data declared in mp1.S */
++ extern volatile unsigned long long rand_seed;
++ extern unsigned long aggression;
++ 
++ /* These parameters must match those used in mp1.S. */
++ #define SCR_WIDTH  80
++ #define SCR_HEIGHT 20
++ #define SCR_SIZE ((SCR_WIDTH) * (SCR_HEIGHT))
++ 
++ /* generate
++  * Generate a pseudo-random 32-bit number.  This routine is not re-entrant
++  * (not safe to use in parallel, even with interrupts, as it IS used in this
++  * assignment), but since timing issues are inherently non-deterministic, 
++  * side effects from the lack of synchronization are ignored.  If you feel
++  * that you want to avoid the side effects, either add synchronization or
++  * privatize the tasklet's seed (make two copies and use one inside the
++  * tasklet and the second for other purposes).
++  * Arguments : none
++  * Returns   : a 32-bit pseudo-random number
++  */
++ asmlinkage unsigned long
++ generate (void)
++ {
++     // quick and dirty pseudo-random number generation hack
++     rand_seed = (0x7BFA65DULL * rand_seed + 0xA220189ULL) ^ (rand_seed >> 20);
++     
++     return (rand_seed >> 16);
++ }
++ 
++ 
++ /* seed_generator
++  * Initialize the pseudo-random number generator (generate).
++  * Arguments : unsigned long val - bits for the initial seed value
++  * Returns   : nothing
++  */
++ asmlinkage void
++ seed_generator (unsigned long val)
++ {
++     rand_seed = (((unsigned long long)val) << 32) + val;
++ }
++ 
++ 
++ /* init_virus
++  * Place initial blobs of virus into a board.
++  * Arguments : unsigned char* board - the board to fill
++  * Returns   : number of cells that are live
++  * Notes     : assumes board of width SCR_WIDTH and height SCR_WIDTH
++  */
++ asmlinkage int
++ init_virus (unsigned char* board)
++ {
++     int blobs = 2;
++     int x, y, i, j, p;
++     int cnt = 0;
++ 
++     if (11 > SCR_WIDTH || 11 > SCR_HEIGHT) {
++         return 0;
++     }
++     while (0 < blobs--) {
++ 	x = (generate () % (SCR_WIDTH - 10)) + 5;
++ 	y = (generate () % (SCR_HEIGHT - 10)) + 5;
++ 
++ 	for (j = y - 2; y + 2 >= j; j++) {
++ 	    for (i = x - 2; x + 2 >= i; i++) {
++ 		p = j * SCR_WIDTH + i;
++ 		if (0 == board[p]) {
++ 		    cnt++;
++ 		}
++ 		board[p] = 1;
++ 	    }
++ 	}
++     }
++ 
++     return cnt;
++ }
++ 
++ 
++ /* neighbor_count
++  * Count live neighbor cells for a cell in a board.
++  * Arguments : unsigned char* cell - address of the cell
++  * Returns   : number of neighbors that are live (0 to 8)
++  * Notes     : assumes board of width SCR_WIDTH; does not check boundary
++  *             conditions; assumes that all cells are 0 for dead, 1 for live
++  */
++ asmlinkage int
++ neighbor_count (unsigned char* cell)
++ {
++     return (cell[-SCR_WIDTH - 1] + cell[-SCR_WIDTH] + cell[-SCR_WIDTH + 1] + 
++     	    cell[-1] + cell[1] + 
++ 	    cell[SCR_WIDTH - 1] + cell[SCR_WIDTH] + cell[SCR_WIDTH + 1]);
++ }
++ 
++ 
++ /* tick_result
++  * Modified game of life update function. 
++  * Arguments : unsigned char current - current cell value (0 = dead, 1 = live)
++  *             int neighbors - number of live neighbors for the cell
++  * Returns   : 0 if the cell should be dead in the next generation,
++  *             1 if the cell should be live in the next generation
++  */
++ asmlinkage int
++ tick_result (unsigned char cur, int neighbors)
++ {
++     if (0 == cur) {
++ 	return (3 == neighbors ||
++ 		(2 == neighbors && aggression > (generate () % 1000)));
++     }
++     return (2 <= neighbors && 3 >= neighbors);
++ }
++ 
++ 
+  #ifdef RTC_IRQ
++ /* Student's tasklet */
++ static DECLARE_TASKLET(mp1_rtc_tasklet_struct, mp1_rtc_tasklet, 0);
++ 
+  /*
+   *	A very tiny interrupt handler. It runs with IRQF_DISABLED set,
+   *	but there is possibility of conflicting with the set_rtc_mmss()
+   *	call (the rtc irq and the timer irq can easily run at the same
+***************
+*** 263,270 ****
+--- 437,447 ----
+  		mod_timer(&rtc_irq_timer, jiffies + HZ/rtc_freq + 2*HZ/100);
+  
+  	spin_unlock (&rtc_lock);
+  
++ 	/* Schedule the MP1 tasklet to run later */
++ 	tasklet_schedule(&mp1_rtc_tasklet_struct);
++ 
+  	/* Now do the rest of the actions */
+  	spin_lock(&rtc_task_lock);
+  	if (rtc_callback)
+  		rtc_callback->func(rtc_callback->private_data);
+***************
+*** 409,416 ****
+--- 586,598 ----
+  		case RTC_UIE_OFF:
+  		case RTC_UIE_ON:
+  		case RTC_IRQP_READ:
+  		case RTC_IRQP_SET:
++ 		case RTC_STARTGAME:
++ 		case RTC_ENDGAME:
++ 		case RTC_KEYSTROKE:
++ 		case RTC_GETSTATUS:
++ 		case RTC_VACCINATE:
+  			return -EINVAL;
+  		};
+  	}
+  #endif
+***************
+*** 692,699 ****
+--- 874,914 ----
+  
+  		epoch = arg;
+  		return 0;
+  	}
++ 
++ 	{ int ret;
++ 	case RTC_STARTGAME:
++ 		life_or_death_id = current;
++ 		local_irq_disable();
++ 		ret = mp1_ioctl(arg, 0);
++ 		local_irq_enable();
++ 		return ret;
++ 
++ 	case RTC_ENDGAME:
++ 		local_irq_disable();
++ 		ret = mp1_ioctl(arg, 1);
++ 		local_irq_enable();
++ 		return ret;
++ 
++ 	case RTC_KEYSTROKE:
++ 		local_irq_disable();
++ 		ret = mp1_ioctl(arg, 2);
++ 		local_irq_enable();
++ 		return ret;
++ 
++ 	case RTC_GETSTATUS:
++ 		local_irq_disable();
++ 		ret = mp1_ioctl(arg, 3);
++ 		local_irq_enable();
++ 		return ret;
++ 
++ 	case RTC_VACCINATE:
++ 		local_irq_disable();
++ 		ret = mp1_ioctl(arg, 4);
++ 		local_irq_enable();
++ 		return ret;
++ 	}
+  	default:
+  		return -ENOTTY;
+  	}
+  	return copy_to_user((void __user *)arg, &wtime, sizeof wtime) ? -EFAULT : 0;
+***************
+*** 1093,1101 ****
+  #endif
+  
+  	(void) init_sysctl();
+  
+! 	printk(KERN_INFO "Real Time Clock Driver v" RTC_VERSION "\n");
+  
+  	return 0;
+  }
+  
+--- 1308,1320 ----
+  #endif
+  
+  	(void) init_sysctl();
+  
+! 	/* Map video memory into the kernel's virtual address space */
+! 	vmem_base_addr = ioremap(0xb8000, 4000);
+! 
+! 	printk(KERN_INFO "Real Time Clock Driver v" RTC_VERSION 
+! 			 " Modified for ECE391 MP1\n");
+  
+  	return 0;
+  }
+  
+diff -r -C 4 linux-2.6.22.5/include/linux/rtc.h mp1-linux/include/linux/rtc.h
+*** linux-2.6.22.5/include/linux/rtc.h	2011-08-20 17:14:14.000000000 -0500
+--- mp1-linux/include/linux/rtc.h	2019-08-31 11:33:34.000000000 -0500
+***************
+*** 209,213 ****
+--- 209,234 ----
+  irqreturn_t rtc_interrupt(int irq, void *dev_id);
+  
+  #endif /* __KERNEL__ */
+  
++ /* adapted from missile command extensions by SSL */
++ /* MP1 stuff  - MJM ; 2.6.22.5 update by SSL */
++ 
++ #define RTC_STARTGAME 	_IO('M', 0x13) 
++ #define RTC_ENDGAME 	_IO('M', 0x14)
++ #define RTC_KEYSTROKE 	_IO('M', 0x15)  
++ #define RTC_GETSTATUS 	_IO('M', 0x16)
++ #define RTC_VACCINATE	_IO('M', 0x17)
++ 
++ struct keystroke_args {
++     unsigned short direction;
++     unsigned short selector;
++     unsigned char guess[5];
++     unsigned char hint[5];
++ } __attribute__((packed));
++ 
++ struct game_status {
++     unsigned int pop;
++     unsigned int inf;
++ } __attribute__((packed));
++ 
+  #endif /* _LINUX_RTC_H_ */

@@ -1,0 +1,142 @@
+Buglog - Lin Hangzheng ECE 391
+********************************** checkpoint 1 **********************************
+1.      Date:2/10/2019
+        Problem: 
+           
+            The draw_vert_line (int x) function doesn't work well, when trying to move right and left with arrow
+            keys. The rest of the image is clearly not the rest of my screen.
+        reported by: Lin Hangzheng
+        Resolved by: Lin Hangzheng
+        solution: 
+            The offset of the addr is wrong, every time adding a new pixel we need to add SCROLL_X_WIDTH into the 
+            offset.
+        Time taken: ~10mins
+
+2.      Date:3/10/2019
+        Problem:
+            After adding the status bar, the top and bottom of the screen is flickering. It seems two status bars are 
+            shown on the screen
+        reported by: Lin Hangzheng
+        Resolved by: Lin Hangzheng
+        solution:
+            In the function set_mode_X, change the initial value of target_img from 0 to STATUS_BAR_SIZE.
+        Time taken: ~25mins
+
+3.      Date:3/10/2019
+        Promblem:
+            For adding the texts into the status bar, the characters are wrong but when the texts are in the middle, it's correct!!!
+        reported by: Lin Hangzheng
+        Resolved by: Lin Hangzheng
+        solution:
+            When calling the show_status_bar, I forgot to add a "()" after calling the get_typed_command() function and use the game_info.where
+            without room_name().
+        Time taken: ~45mins
+
+4.      Date:3/10/2019
+        Promblem:
+            When typing texts into the status bar, the texts are flickering, but the given texts shown on the left or the middle of the
+            screen are correct.
+        reported by: Lin Hangzheng
+        Resolved by: Lin Hangzheng 
+        solution:
+            Everytime the show_status_bar function is called, it will cover the status bar with the backgrond color and then 
+            write the texts into it. Therefore, once we update the status bar, it will clear the texts and then write them, which
+            will cause the status bar flickering. To solve it, we need to change the constructure of our functions. Seperate the 
+            copy buffer function and the update buffer function. Call them one by one but no one inside the other.
+        Time taken: 4hrs
+
+5.      Date:4/10/2019
+        Problem:
+            When adding the underline on the right of the status bar, the underline looks like an "O".
+        reported by: Lin Hangzheng
+        Resolved by: Lin Hangzheng
+        solution:
+            Can not just add a "_" string in the last of the test array, but use the ASCII nuber(95, or 0x5F) of the underline.
+        Time taken: 5mins
+
+********************************** checkpoint 2.2 **********************************
+1.      Date:9/10/2019
+        Problem:
+            When type su -c ./adventure, the program turn off automaticly and no message printed.
+        reported by: Lin Hangzheng
+        Resolved by: Lin Hangzheng
+        solution:
+            After gdb, I find that when calculating the Level 2 palette, some colors count number are 0, so 
+            when calculate the average R,G,B, it will divide the count. In other words, it divides 0. I just 
+            need to add a if condition, once the loop meets the 0 count, it countinues the loop.
+        Time taken: 5mins
+
+2.      Date:9/10/2019
+        Problem:
+            Can not enter the game.
+        reported by: Lin Hangzheng
+        Resolved by: Lin Hangzheng
+        solution:
+            After gdb, I find I read the piexel twice. So I create an array to store each pixel during the first
+            iteration. 
+        Time taken: 20mins    
+
+2.      Date:9/10/2019
+        Problem:
+            The image can be shown on the screen but the color is quite strange, and it doesn't contain
+            to many colors.
+        reported by: Lin Hangzheng
+        Resolved by: Lin Hangzheng
+        solution:
+            The palette I set is correct, but when I set the 8 bit pointer to the p->img, i forgot to add 64 into it.
+            Therefore the image shown on the screen used the first 64 based color before optimized instead. That's why
+            its color looks like dull. The solution is just to add 64 into the index.
+        Time taken: 40mins 
+
+********************************** checkpoint 2.1 **********************************
+1.      Date:9/12/2019
+        Problem:
+            When press the reset, the LEDs don't response, and I find in the kernel space, printk is not runed
+            in anywhere
+        reported by: Lin Hangzheng
+        Resolved by: Lin Hangzheng
+        solution:
+            I compiled my code in the dev but not the test-debug
+        Time taken: 4hrs 
+
+2.      Date:9/13/2019
+        Problem:
+            The LEDs always show "OOPS" and can not be changed.
+        reported by: Lin Hangzheng
+        Resolved by: Lin Hangzheng
+        solution:
+            Everytime I set the buff and sent it to the Tux in set LED function, the size of the buff
+            is always 6. And in the test case, only 3 LEDs are need to work, so the buffer size should be 
+            equal to 2 + #working_LED. 
+        Time taken: 3hrs 
+
+3.      Date:9/13/2019
+        Problem:
+            When typing the button of the Tux board, the A, B, C button will be not changed if the previous
+            type is the same button.
+        reported by: Lin Hangzheng
+        Resolved by: Lin Hangzheng
+        solution:
+            for the default case, i forgot to reset the previous command into CMD_NONE. The solution is just 
+            to add it.
+        Time taken: 10mins 
+
+3.      Date:9/13/2019
+        Problem:
+            Can not control the game with the TUX controller.
+        reported by: Lin Hangzheng
+        Resolved by: Lin Hangzheng
+        solution:
+            Just forget to use call my get_tux_command() function in adventure !!
+        Time taken: 70mins
+
+4.      Date:9/13/2019
+        Problem:
+            The game window controled by the Tux gets stuck, and once I type the direction, it will stop a while
+            and then the window will approach to the edge.
+        reported by: Lin Hangzheng
+        Resolved by: Lin Hangzheng
+        solution:
+            I didn't set the buttons_pressed to 0 before the thread done one loop. And I detect the button type (direction or ABC)
+            twice, which makes my code mass and overload the condition check variable. 
+        Time taken: 2hrs
